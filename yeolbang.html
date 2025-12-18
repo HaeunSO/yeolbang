@@ -1,0 +1,1263 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>열방카페 · Staff Orders</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Montserrat:wght@600;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#fff;
+      --text:#0b0b0b;
+      --muted:#555;
+      --line:#0b0b0b;
+      --radius:16px;
+
+      /* JS가 실제 stickyBar 높이(px)로 갱신 */
+      --bar-h: 86px;
+
+      /* Selection 고정 영역 최대 높이 */
+      --dock-max-h: 280px;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:"Nanum Myeongjo", serif;
+      font-size:15px;
+    }
+
+    /* 고정 영역(SelectionDock + StickyBar)만큼 아래 패딩 확보 */
+    .wrap{
+      max-width:980px;
+      margin:0 auto;
+      padding:16px 16px calc(var(--bar-h) + var(--dock-max-h) + 36px);
+    }
+
+    header{
+      position:sticky; top:0; z-index:60;
+      background:rgba(255,255,255,.96);
+      backdrop-filter: blur(10px);
+      border-bottom:2px solid var(--line);
+    }
+    .top{
+      display:flex; align-items:flex-end; justify-content:space-between; gap:12px;
+      padding:10px 0 12px;
+    }
+    .brand{ display:flex; flex-direction:column; gap:6px; }
+    .brand .cafe{
+      font-weight:800; font-size:14px; color:var(--muted); letter-spacing:.4px;
+    }
+    .brand .menu{
+      font-family:"Montserrat", system-ui, sans-serif;
+      font-weight:900; font-size:44px; letter-spacing:1px; line-height:1;
+    }
+    .meta{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; min-width:240px; }
+    .clock{ font-size:12px; color:var(--muted); font-weight:800; }
+    .status{
+      border:2px solid var(--line);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      font-weight:900;
+      font-family:"Montserrat", system-ui, sans-serif;
+      letter-spacing:.6px;
+      white-space:nowrap;
+    }
+
+    .tabs{
+      display:flex; gap:14px;
+      padding:10px 0 12px;
+      border-top:1px solid #ddd;
+    }
+    .tab{
+      border:0; background:transparent; cursor:pointer;
+      font-family:"Montserrat", system-ui, sans-serif;
+      font-weight:900; font-size:13px;
+      letter-spacing:.8px;
+      text-transform:uppercase;
+      padding:8px 2px;
+      border-bottom:3px solid transparent;
+      color:var(--text);
+    }
+    .tab.active{ border-bottom-color:var(--line); }
+
+    .sectionTitle{
+      font-family:"Montserrat", system-ui, sans-serif;
+      font-weight:900;
+      font-size:28px;
+      letter-spacing:1px;
+      text-transform:uppercase;
+      margin:16px 0 10px;
+    }
+
+    .panel{
+      border:2px solid var(--line);
+      border-radius:var(--radius);
+      padding:12px;
+      background:#fff;
+    }
+
+    label{
+      display:block;
+      font-family:"Montserrat", system-ui, sans-serif;
+      font-weight:900;
+      font-size:12px;
+      letter-spacing:.9px;
+      text-transform:uppercase;
+      margin:8px 0 6px;
+    }
+    input{
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:2px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      font-weight:800;
+      outline:none;
+      font-family:"Nanum Myeongjo", serif;
+      font-size:16px;
+    }
+    select{
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:2px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      font-weight:800;
+      outline:none;
+      font-family:"Nanum Myeongjo", serif;
+      font-size:16px;
+    }
+    .note{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:14px;
+      font-weight:700;
+    }
+
+    /* Menu */
+    .menuList{ display:flex; flex-direction:column; gap:10px; }
+    .menuRow{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:12px 12px;
+      border:1px solid #ddd;
+      border-radius:14px;
+      background:#fff;
+    }
+    .menuLeft{ min-width:0; flex:1 1 auto; }
+    .menuName{
+      font-weight:800;
+      font-size:18px;
+      line-height:1.2;
+      word-break:keep-all;
+    }
+
+    .menuRight{
+      display:grid;
+      grid-template-columns: 64px 150px auto; /* price, variant, qty */
+      align-items:center;
+      gap:10px;
+      justify-content:end;
+      flex:0 0 auto;
+    }
+    .menuPrice{
+      min-width:64px;
+      text-align:left;
+      font-family:"Montserrat", system-ui, sans-serif;
+      font-weight:900;
+      letter-spacing:.6px;
+      font-size:13px;
+    }
+
+    .seg{
+      display:flex;
+      gap:6px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:3px;
+      justify-self:start;
+    }
+    .seg button{
+      border:0; background:transparent; cursor:pointer;
+      padding:6px 10px;
+      border-radius:999px;
+      font-family:"Montserrat", system-ui, sans-serif;
+      font-weight:900;
+      font-size:12px;
+      letter-spacing:.4px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .seg button.on{ background:var(--text); color:#fff; }
+
+    .qty{
+      display:flex; align-items:center; gap:8px;
+      border:2px solid var(--line);
+      border-radius:999px;
+      padding:4px;
+      justify-self:end;
+    }
+    .qty button{
+      width:36px; height:36px;
+      border-radius:999px;
+      border:2px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      font-weight:900;
+      font-size:18px;
+      cursor:pointer;
+      font-family:"Montserrat", system-ui, sans-serif;
+    }
+    .qty b{
+      min-width:18px;
+      text-align:center;
+      font-weight:900;
+      font-family:"Montserrat", system-ui, sans-serif;
+    }
+
+    .divider{ height:1px; background:#ddd; margin:10px 0; }
+    .items{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+    .itemLine{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:15px;
+    }
+    .muted{ color:var(--muted); font-weight:700; }
+
+    .btn{
+      border:2px solid var(--line);
+      background:#fff;
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      font-family:"Montserrat", system-ui, sans-serif;
+      font-weight:900;
+      font-size:12px;
+      letter-spacing:.7px;
+      text-transform:uppercase;
+      cursor:pointer;
+    }
+    .btn.fill{ background:var(--text); color:#fff; }
+    .btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+    .list{ display:flex; flex-direction:column; gap:10px; }
+    .orderCard{
+      border:2px solid var(--line);
+      border-radius:var(--radius);
+      padding:12px;
+      background:#fff;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      border:2px solid var(--line);
+      padding:6px 10px;
+      border-radius:999px;
+      font-family:"Montserrat", system-ui, sans-serif;
+      font-weight:900;
+      font-size:12px;
+      letter-spacing:.6px;
+      margin-right:8px;
+      margin-bottom:6px;
+      white-space:nowrap;
+    }
+    .orderTop{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    /* ===== Selection Dock: 하단 바 바로 위 고정 ===== */
+    .selectionDock{
+      position:fixed;
+      left:0; right:0;
+      bottom: var(--bar-h);
+      z-index:69;
+      background: rgba(255,255,255,.96);
+      backdrop-filter: blur(10px);
+      border-top:2px solid var(--line);
+    }
+    .dockInner{
+      max-width:980px;
+      margin:0 auto;
+      padding:10px 16px 12px;
+    }
+    .dockPanel{
+      border:2px solid var(--line);
+      border-radius:var(--radius);
+      background:#fff;
+      padding:10px 12px;
+      max-height: var(--dock-max-h);
+      overflow:auto;
+    }
+    .dockHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .dockTitle{
+      font-family:"Montserrat", system-ui, sans-serif;
+      font-weight:900;
+      letter-spacing:.8px;
+      text-transform:uppercase;
+      font-size:12px;
+    }
+
+    /* Sticky total bar */
+    .stickyBar{
+      position:fixed; left:0; right:0; bottom:0; z-index:70;
+      background:rgba(255,255,255,.96);
+      backdrop-filter: blur(10px);
+      border-top:2px solid var(--line);
+    }
+    .barInner{ max-width:980px; margin:0 auto; padding:12px 16px; }
+    .bar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .totalBox{ display:flex; flex-direction:column; gap:2px; }
+    .totalBox span{ font-size:12px; color:var(--muted); font-weight:800; }
+    .totalBox b{
+      font-family:"Montserrat", system-ui, sans-serif;
+      font-weight:900;
+      font-size:18px;
+      letter-spacing:.6px;
+    }
+    .btns{ display:flex; gap:8px; }
+
+    .brandFooter{ display:flex; justify-content:center; margin:30px 0 10px; }
+    .brandFooter img{ width:min(520px,92%); height:auto; display:block; }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="wrap" style="padding-bottom:0">
+    <div class="top">
+      <div class="brand">
+        <div class="cafe">열방카페</div>
+        <div class="menu">MENU</div>
+      </div>
+      <div class="meta">
+        <div class="clock" id="clock">—</div>
+        <div class="status" id="statusPill">OPEN 0 · DONE(오늘) 0</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="order">ORDER</button>
+      <button class="tab" data-tab="open">OPEN</button>
+      <button class="tab" data-tab="settle">SETTLE</button>
+      <button class="tab" data-tab="settings">SETTINGS</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- ORDER -->
+  <section id="tab-order">
+    <div class="panel">
+      <label>주문자 / 팀명</label>
+      <input id="buyerName" placeholder="예: 오진수" />
+
+      <label style="margin-top:10px">결제 방식</label>
+      <div class="seg" id="paySeg" role="group" aria-label="결제 방식">
+        <button type="button" data-pay="CASH" class="on">현금</button>
+        <button type="button" data-pay="TRANSFER">계좌이체</button>
+      </div>
+      <input type="hidden" id="payMethod" value="CASH" />
+
+      <div class="note">Confirm 후에는 이름/결제방식이 잠깁니다. 수정하려면 아래 ‘선택 초기화’를 누르세요.</div>
+    </div>
+
+    <div class="sectionTitle">COFFEE</div>
+    <div class="menuList" id="menuCoffee"></div>
+
+    <div class="sectionTitle" style="margin-top:22px">NON COFFEE</div>
+    <div class="menuList" id="menuNonCoffee"></div>
+
+    <div class="brandFooter">
+      <img src="./yeolbang_footer.png" alt="열방카페 footer" />
+    </div>
+  </section>
+
+  <!-- OPEN -->
+  <section id="tab-open" hidden>
+    <div class="panel" style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div>
+          <div style="font-family:Montserrat,system-ui,sans-serif;font-weight:900;letter-spacing:.8px;text-transform:uppercase">Open Orders</div>
+          <div class="note">완료 처리하면 OPEN에서 사라지고 히스토리에 저장됩니다.</div>
+        </div>
+        <button class="btn" id="btnSortOpen">정렬: 최신순</button>
+      </div>
+    </div>
+
+    <div class="list" id="openList"></div>
+    <div id="emptyOpen" class="muted">진행중 주문이 없습니다.</div>
+
+    <div class="brandFooter">
+      <img src="./yeolbang_footer.png" alt="열방카페 footer" />
+    </div>
+  </section>
+
+  <!-- SETTLE -->
+  <section id="tab-settle" hidden>
+    <div class="panel">
+      <div style="font-family:Montserrat,system-ui,sans-serif;font-weight:900;letter-spacing:.8px;text-transform:uppercase">Settle</div>
+      <div class="note">날짜별 완료 주문 및 합계를 확인합니다.</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div>
+          <label>날짜</label>
+          <input type="date" id="settleDate" />
+        </div>
+        <div>
+          <label>기준</label>
+          <select id="settleMode">
+            <option value="doneAt">완료일 기준</option>
+            <option value="createdAt">접수일 기준</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:10px">
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">
+        <div><div class="muted">완료 주문</div><div style="font-family:Montserrat;font-weight:900;font-size:18px" id="kpiCount">0건</div></div>
+        <div><div class="muted">총 매출</div><div style="font-family:Montserrat;font-weight:900;font-size:18px" id="kpiTotal">0원</div></div>
+        <div><div class="muted">평균</div><div style="font-family:Montserrat;font-weight:900;font-size:18px" id="kpiAvg">0원</div></div>
+        <div><div class="muted">최다 메뉴</div><div style="font-family:Montserrat;font-weight:900;font-size:14px" id="kpiTop">—</div></div>
+      </div>
+
+      <div class="divider"></div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap">
+        <span class="pill" id="kpiCash">현금 0원</span>
+        <span class="pill" id="kpiTransfer">계좌이체 0원</span>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:10px">
+      <div style="font-family:Montserrat,system-ui,sans-serif;font-weight:900;letter-spacing:.8px;text-transform:uppercase">Aggregation</div>
+      <div class="items" id="aggList"></div>
+      <div id="emptyAgg" class="muted">해당 날짜에 완료 주문이 없습니다.</div>
+    </div>
+
+    <div class="panel" style="margin-top:10px">
+      <div style="font-family:Montserrat,system-ui,sans-serif;font-weight:900;letter-spacing:.8px;text-transform:uppercase">History</div>
+      <div class="items" id="historyList"></div>
+      <div id="emptyHistory" class="muted">해당 날짜에 완료 주문이 없습니다.</div>
+    </div>
+
+    <div class="brandFooter">
+      <img src="./yeolbang_footer.png" alt="열방카페 footer" />
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="tab-settings" hidden>
+    <div class="panel">
+      <div style="font-family:Montserrat,system-ui,sans-serif;font-weight:900;letter-spacing:.8px;text-transform:uppercase">Season Menu</div>
+      <div class="note">필요할 때만 추가/활성화하세요. (태블릿 1대 로컬 저장)</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div>
+          <label>메뉴명</label>
+          <input id="seasonName" placeholder="예: 딸기라떼" />
+        </div>
+        <div>
+          <label>가격(예: 4.5)</label>
+          <input id="seasonPrice" inputmode="decimal" placeholder="예: 4.5" />
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div>
+          <label>옵션</label>
+          <select id="seasonVariant">
+            <option value="both">HOT/ICED 가능</option>
+            <option value="none">옵션 없음</option>
+            <option value="icedOnly">Only Iced</option>
+          </select>
+        </div>
+        <div>
+          <label>상태</label>
+          <select id="seasonActive">
+            <option value="true">활성</option>
+            <option value="false">비활성</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn fill" id="btnAddSeason">추가</button>
+        <div class="note" style="margin:0">추가된 시즌 메뉴는 주문 화면에 즉시 반영됩니다.</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div style="font-family:Montserrat,system-ui,sans-serif;font-weight:900;letter-spacing:.8px;text-transform:uppercase">List</div>
+      <div class="items" id="seasonList"></div>
+      <div id="emptySeason" class="muted">시즌 메뉴가 없습니다.</div>
+    </div>
+
+    <div class="panel" style="margin-top:10px">
+      <div style="font-family:Montserrat,system-ui,sans-serif;font-weight:900;letter-spacing:.8px;text-transform:uppercase">Backup</div>
+      <div class="note">태블릿 교체/초기화 대비용입니다.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn" id="btnExport">내보내기(JSON)</button>
+        <label class="btn" style="cursor:pointer">
+          불러오기
+          <input type="file" id="importFile" accept="application/json" hidden />
+        </label>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:10px;border-style:dashed">
+      <div style="font-family:Montserrat,system-ui,sans-serif;font-weight:900;letter-spacing:.8px;text-transform:uppercase">Reset</div>
+      <div class="note">진행중/히스토리/시즌메뉴 데이터가 모두 삭제됩니다.</div>
+      <div style="margin-top:10px">
+        <button class="btn" id="btnResetAll">전체 데이터 초기화</button>
+      </div>
+    </div>
+
+    <div class="brandFooter">
+      <img src="./yeolbang_footer.png" alt="열방카페 footer" />
+    </div>
+  </section>
+</main>
+
+<!-- ===== 고정 Selection Dock (선택중/가격 바 바로 위) ===== -->
+<div class="selectionDock" id="selectionDock">
+  <div class="dockInner">
+    <div class="dockPanel">
+      <div class="dockHead">
+        <div>
+          <div class="dockTitle">Selection</div>
+          <div class="note" style="margin-top:6px">Confirm → Receive 순서로 처리하세요.</div>
+        </div>
+        <button class="btn" id="btnClearSelection">선택 초기화</button>
+      </div>
+      <div class="divider"></div>
+      <div class="items" id="selectionList"></div>
+      <div id="emptySelection" class="muted">선택된 메뉴가 없습니다.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 고정 합계/버튼 바 ===== -->
+<div class="stickyBar">
+  <div class="barInner">
+    <div class="bar">
+      <div class="totalBox">
+        <span id="confirmState">선택중</span>
+        <b id="totalWon">0원</b>
+      </div>
+      <div class="btns">
+        <button class="btn" id="btnConfirm" disabled>Confirm</button>
+        <button class="btn fill" id="btnReceive" disabled>Receive</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const PRICE_UNIT = 1000;
+  const LS = {
+    OPEN: "yeolbang_open_orders_v5",
+    HIST: "yeolbang_history_orders_v5",
+    SEASON: "yeolbang_season_menu_v5",
+    COUNTER: "yeolbang_daily_counter_v5",
+  };
+
+  const fixedMenu = [
+    { id:"AMERICANO", name:"아메리카노", price:2.0, category:"COFFEE", variant:"both" },
+    { id:"LATTE", name:"카페라떼", price:3.0, category:"COFFEE", variant:"both" },
+    { id:"VANILLA_LATTE", name:"바닐라라떼", price:4.0, category:"COFFEE", variant:"both" },
+    { id:"ASHOTCHU", name:"아샷추", price:3.0, category:"COFFEE", variant:"icedOnly" },
+
+    { id:"ICETEA", name:"아이스티", price:2.0, category:"NON", variant:"icedOnly" },
+    { id:"MILKTEA", name:"밀크티", price:4.0, category:"NON", variant:"both" },
+    { id:"HIBISCUS_TEA", name:"히비스커스티", price:3.0, category:"NON", variant:"both" },
+    { id:"HISTEA", name:"히스티", price:4.0, category:"NON", variant:"icedOnly" },
+    { id:"CHOCO_LATTE", name:"초코라떼", price:3.0, category:"NON", variant:"both" },
+    { id:"GREEN_TEA_LATTE", name:"녹차라떼", price:4.0, category:"NON", variant:"both" },
+  ];
+
+  const el = (id) => document.getElementById(id);
+  const load = (k, fb) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch { return fb; } };
+  const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+  const fmtWon = (n) => (n || 0).toLocaleString("ko-KR") + "원";
+  const nowISO = () => new Date().toISOString();
+  const toKTime = (ts) => new Date(ts).toLocaleTimeString("ko-KR", { hour:"2-digit", minute:"2-digit" });
+  const toDateKey = (ts) => {
+    const d = new Date(ts);
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${day}`;
+  };
+  const todayKey = () => toDateKey(new Date());
+
+  const escapeHtml = (s) => String(s)
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+
+  const paymentLabel = (v) => (v === "TRANSFER" ? "계좌이체" : "현금");
+
+  const state = {
+    tab: "order",
+    confirmed: false,
+    openSortNewest: true,
+    selection: new Map(),
+    openOrders: load(LS.OPEN, []),
+    historyOrders: load(LS.HIST, []),
+    seasonMenu: load(LS.SEASON, []),
+  };
+
+  function getDailyCounter(){
+    const all = load(LS.COUNTER, {});
+    const key = todayKey();
+    if (!all[key]) all[key] = 0;
+    return { all, key };
+  }
+  function nextOrderNo(){
+    const { all, key } = getDailyCounter();
+    all[key] += 1;
+    save(LS.COUNTER, all);
+    return `${key}-${String(all[key]).padStart(3,"0")}`;
+  }
+
+  function activeMenu(){
+    return [...fixedMenu, ...state.seasonMenu.filter(x => x.active)];
+  }
+  function selectionTotalWon(){
+    let sum = 0;
+    for (const v of state.selection.values()) sum += v.unitWon * v.qty;
+    return sum;
+  }
+
+  function setTab(next){
+    state.tab = next;
+    document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === state.tab));
+    el("tab-order").hidden = state.tab !== "order";
+    el("tab-open").hidden = state.tab !== "open";
+    el("tab-settle").hidden = state.tab !== "settle";
+    el("tab-settings").hidden = state.tab !== "settings";
+
+    // ORDER에서만 Selection Dock + StickyBar 보여주기
+    el("selectionDock").style.display = (state.tab === "order") ? "block" : "none";
+    document.querySelector(".stickyBar").style.display = (state.tab === "order") ? "block" : "none";
+
+    syncFixedHeights();
+
+    if (state.tab === "open") renderOpen();
+    if (state.tab === "settle") renderSettle();
+    if (state.tab === "settings") renderSettings();
+  }
+
+  function updateHeaderStats(){
+    const openCount = state.openOrders.length;
+    const doneToday = state.historyOrders.filter(o => toDateKey(o.doneAt) === todayKey()).length;
+    el("statusPill").textContent = `OPEN ${openCount} · DONE(오늘) ${doneToday}`;
+  }
+
+  // ===== Fixed height sync (선택 Dock이 가격바 바로 위로 정확히 붙도록) =====
+  function syncFixedHeights(){
+    const bar = document.querySelector(".stickyBar");
+    if (!bar) return;
+    const h = bar.offsetHeight || 86;
+    document.documentElement.style.setProperty("--bar-h", h + "px");
+  }
+
+  // ===== Payment toggle =====
+  function setPayment(value){
+    el("payMethod").value = value;
+    el("paySeg").querySelectorAll("button").forEach(b => {
+      b.classList.toggle("on", b.dataset.pay === value);
+    });
+  }
+  function lockPaymentToggle(isLocked){
+    el("paySeg").style.pointerEvents = isLocked ? "none" : "auto";
+    el("paySeg").style.opacity = isLocked ? "0.6" : "1";
+  }
+
+  function variantLabel(variant){
+    if (variant === "both") return "(Hot/Iced)";
+    if (variant === "icedOnly") return "(Only Iced)";
+    return "";
+  }
+
+  function buildVariantControl(menu){
+    const seg = document.createElement("div");
+    seg.className = "seg";
+
+    let current = "NONE";
+    if (menu.variant === "both") current = "HOT";
+    if (menu.variant === "icedOnly") current = "ICED";
+
+    if (menu.variant === "both"){
+      seg.innerHTML = `
+        <button type="button" data-v="HOT" class="on">HOT</button>
+        <button type="button" data-v="ICED">ICED</button>
+      `;
+    } else if (menu.variant === "icedOnly"){
+      seg.innerHTML = `<button type="button" data-v="ICED" class="on">ICED</button>`;
+    } else {
+      seg.innerHTML = `<button type="button" data-v="NONE" class="on">—</button>`;
+    }
+
+    seg.addEventListener("click", (e) => {
+      if (!(e.target instanceof HTMLButtonElement)) return;
+      if (state.confirmed) return;
+      const v = e.target.dataset.v;
+      if (!v) return;
+      current = v;
+      seg.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === current));
+    });
+
+    return { seg, getVariant: () => current };
+  }
+
+  function updateMenuQty(menuId, qtyEl){
+    let sum = 0;
+    for (const k of state.selection.keys()){
+      if (k.startsWith(menuId + "__")) sum += state.selection.get(k).qty;
+    }
+    qtyEl.textContent = String(sum);
+  }
+
+  function renderMenu(){
+    const coffee = el("menuCoffee");
+    const non = el("menuNonCoffee");
+    coffee.innerHTML = "";
+    non.innerHTML = "";
+
+    for (const m of activeMenu()){
+      const row = document.createElement("div");
+      row.className = "menuRow";
+
+      const left = document.createElement("div");
+      left.className = "menuLeft";
+      left.innerHTML = `
+        <div class="menuName">${escapeHtml(m.name)} <span class="muted">${variantLabel(m.variant)}</span></div>
+      `;
+
+      const right = document.createElement("div");
+      right.className = "menuRight";
+
+      const price = document.createElement("div");
+      price.className = "menuPrice";
+      price.textContent = m.price.toFixed(1);
+
+      const { seg, getVariant } = buildVariantControl(m);
+
+      const qty = document.createElement("div");
+      qty.className = "qty";
+      qty.innerHTML = `<button type="button">-</button><b>0</b><button type="button">+</button>`;
+      const qtyNum = qty.querySelector("b");
+      const btnMinus = qty.querySelectorAll("button")[0];
+      const btnPlus  = qty.querySelectorAll("button")[1];
+
+      const keyFor = (v) => `${m.id}__${v}`;
+
+      btnPlus.addEventListener("click", () => {
+        if (state.confirmed) return;
+        const v = (m.variant === "both" || m.variant === "icedOnly") ? getVariant() : "NONE";
+        const k = keyFor(v);
+        const unitWon = Math.round(m.price * PRICE_UNIT);
+        const suffix = (v === "HOT") ? " (hot)" : (v === "ICED" ? " (iced)" : "");
+        const lineName = m.name + suffix;
+
+        if (state.selection.has(k)) state.selection.get(k).qty += 1;
+        else state.selection.set(k, { menuId:m.id, name:lineName, unitWon, qty:1, variant:v });
+
+        renderSelection();
+        updateMenuQty(m.id, qtyNum);
+      });
+
+      btnMinus.addEventListener("click", () => {
+        if (state.confirmed) return;
+        const v = (m.variant === "both" || m.variant === "icedOnly") ? getVariant() : "NONE";
+        let k = keyFor(v);
+
+        if (!state.selection.has(k)){
+          const any = [...state.selection.keys()].find(x => x.startsWith(m.id + "__"));
+          if (!any) return;
+          k = any;
+        }
+        const cur = state.selection.get(k);
+        cur.qty -= 1;
+        if (cur.qty <= 0) state.selection.delete(k);
+
+        renderSelection();
+        updateMenuQty(m.id, qtyNum);
+      });
+
+      right.appendChild(price);
+      right.appendChild(seg);
+      right.appendChild(qty);
+
+      row.appendChild(left);
+      row.appendChild(right);
+
+      (m.category === "COFFEE" ? coffee : non).appendChild(row);
+      updateMenuQty(m.id, qtyNum);
+    }
+  }
+
+  function renderSelection(){
+    const list = el("selectionList");
+    const empty = el("emptySelection");
+    list.innerHTML = "";
+
+    const lines = [...state.selection.values()].sort((a,b) => a.name.localeCompare(b.name, "ko"));
+    if (lines.length === 0){
+      empty.style.display = "block";
+    } else {
+      empty.style.display = "none";
+      for (const line of lines){
+        const div = document.createElement("div");
+        div.className = "itemLine";
+        div.innerHTML = `
+          <div><b>${escapeHtml(line.name)}</b> <span class="muted">x ${line.qty}</span></div>
+          <div><b>${fmtWon(line.unitWon * line.qty)}</b></div>
+        `;
+        list.appendChild(div);
+      }
+    }
+
+    el("totalWon").textContent = fmtWon(selectionTotalWon());
+
+    const hasAny = lines.length > 0;
+    el("btnConfirm").disabled = !hasAny || state.confirmed;
+    el("btnReceive").disabled = !hasAny || !state.confirmed;
+
+    el("buyerName").disabled = state.confirmed;
+    lockPaymentToggle(state.confirmed);
+
+    el("confirmState").textContent = state.confirmed ? "확인됨 (접수 가능)" : "선택중";
+  }
+
+  function markDone(orderId){
+    const idx = state.openOrders.findIndex(o => o.id === orderId);
+    if (idx < 0) return;
+
+    const o = state.openOrders[idx];
+    state.openOrders.splice(idx, 1);
+    save(LS.OPEN, state.openOrders);
+
+    state.historyOrders.push({ ...o, status:"DONE", doneAt: nowISO() });
+    save(LS.HIST, state.historyOrders);
+
+    updateHeaderStats();
+    renderOpen();
+  }
+
+  function renderOpen(){
+    const list = el("openList");
+    const empty = el("emptyOpen");
+    list.innerHTML = "";
+
+    const arr = [...state.openOrders].sort((a,b) =>
+      state.openSortNewest ? (new Date(b.createdAt) - new Date(a.createdAt))
+                           : (new Date(a.createdAt) - new Date(b.createdAt))
+    );
+
+    if (arr.length === 0){
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+
+    for (const order of arr){
+      const card = document.createElement("div");
+      card.className = "orderCard";
+
+      const header = document.createElement("div");
+      header.className = "orderTop";
+      header.innerHTML = `
+        <div>
+          <span class="pill"># ${escapeHtml(order.orderNo)}</span>
+          <span class="pill">${escapeHtml(order.buyerName || "이름 없음")}</span>
+          <span class="pill">${paymentLabel(order.paymentMethod)}</span>
+          <span class="pill">${toKTime(order.createdAt)}</span>
+          <span class="pill">합계 ${fmtWon(order.totalWon)}</span>
+        </div>
+        <button class="btn fill">완료</button>
+      `;
+      header.querySelector("button").addEventListener("click", () => markDone(order.id));
+
+      const items = document.createElement("div");
+      items.className = "items";
+      for (const it of order.items){
+        const div = document.createElement("div");
+        div.className = "itemLine";
+        div.innerHTML = `
+          <div><b>${escapeHtml(it.name)}</b> <span class="muted">x ${it.qty}</span></div>
+          <div class="muted">${fmtWon(it.unitWon * it.qty)}</div>
+        `;
+        items.appendChild(div);
+      }
+
+      card.appendChild(header);
+      card.appendChild(items);
+      list.appendChild(card);
+    }
+  }
+
+  function renderSettle(){
+    const dateInput = el("settleDate");
+    const mode = el("settleMode").value;
+
+    const target = dateInput.value || todayKey();
+    dateInput.value = target;
+
+    const filtered = state.historyOrders
+      .filter(o => toDateKey(mode === "doneAt" ? o.doneAt : o.createdAt) === target)
+      .sort((a,b) => new Date(b.doneAt) - new Date(a.doneAt));
+
+    const count = filtered.length;
+    const total = filtered.reduce((s,o) => s + o.totalWon, 0);
+    const avg = count ? Math.round(total / count) : 0;
+
+    const cashTotal = filtered.filter(o => o.paymentMethod === "CASH").reduce((s,o)=>s+o.totalWon,0);
+    const transferTotal = filtered.filter(o => o.paymentMethod === "TRANSFER").reduce((s,o)=>s+o.totalWon,0);
+
+    const agg = new Map();
+    for (const o of filtered){
+      for (const it of o.items){
+        agg.set(it.name, (agg.get(it.name) || 0) + it.qty);
+      }
+    }
+    const aggArr = [...agg.entries()].sort((a,b)=>b[1]-a[1]);
+    const top = aggArr[0] ? `${aggArr[0][0]} (${aggArr[0][1]})` : "—";
+
+    el("kpiCount").textContent = `${count}건`;
+    el("kpiTotal").textContent = fmtWon(total);
+    el("kpiAvg").textContent = fmtWon(avg);
+    el("kpiTop").textContent = top;
+
+    el("kpiCash").textContent = `현금 ${fmtWon(cashTotal)}`;
+    el("kpiTransfer").textContent = `계좌이체 ${fmtWon(transferTotal)}`;
+
+    const aggList = el("aggList");
+    const emptyAgg = el("emptyAgg");
+    aggList.innerHTML = "";
+    if (aggArr.length === 0){
+      emptyAgg.style.display = "block";
+    } else {
+      emptyAgg.style.display = "none";
+      for (const [name, qty] of aggArr){
+        const div = document.createElement("div");
+        div.className = "itemLine";
+        div.innerHTML = `<div><b>${escapeHtml(name)}</b></div><div class="muted">${qty}잔</div>`;
+        aggList.appendChild(div);
+      }
+    }
+
+    const histList = el("historyList");
+    const emptyHistory = el("emptyHistory");
+    histList.innerHTML = "";
+    if (filtered.length === 0){
+      emptyHistory.style.display = "block";
+    } else {
+      emptyHistory.style.display = "none";
+      for (const o of filtered){
+        const div = document.createElement("div");
+        div.className = "orderCard";
+        div.innerHTML = `
+          <div class="orderTop">
+            <div>
+              <span class="pill"># ${escapeHtml(o.orderNo)}</span>
+              <span class="pill">${escapeHtml(o.buyerName || "이름 없음")}</span>
+              <span class="pill">${paymentLabel(o.paymentMethod)}</span>
+              <span class="pill">완료 ${toKTime(o.doneAt)}</span>
+              <span class="pill">합계 ${fmtWon(o.totalWon)}</span>
+            </div>
+          </div>
+          <div class="items">
+            ${o.items.map(it => `
+              <div class="itemLine">
+                <div><b>${escapeHtml(it.name)}</b> <span class="muted">x ${it.qty}</span></div>
+                <div class="muted">${fmtWon(it.unitWon * it.qty)}</div>
+              </div>
+            `).join("")}
+          </div>
+        `;
+        histList.appendChild(div);
+      }
+    }
+  }
+
+  function renderSettings(){
+    const list = el("seasonList");
+    const empty = el("emptySeason");
+    list.innerHTML = "";
+
+    if (state.seasonMenu.length === 0){
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+
+    for (const sm of state.seasonMenu){
+      const div = document.createElement("div");
+      div.className = "panel";
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start">
+          <div>
+            <div style="font-weight:800;font-size:16px">${escapeHtml(sm.name)} <span class="muted">${variantLabel(sm.variant)}</span></div>
+            <div class="note">가격 ${sm.price.toFixed(1)} · ${sm.active ? "활성" : "비활성"}</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn ${sm.active ? "fill" : ""}" data-act="toggle">${sm.active ? "활성" : "비활성"}</button>
+            <button class="btn" data-act="del">삭제</button>
+          </div>
+        </div>
+      `;
+      div.querySelector('[data-act="toggle"]').addEventListener("click", () => {
+        sm.active = !sm.active;
+        save(LS.SEASON, state.seasonMenu);
+        renderSettings();
+        renderMenu();
+      });
+      div.querySelector('[data-act="del"]').addEventListener("click", () => {
+        state.seasonMenu = state.seasonMenu.filter(x => x.id !== sm.id);
+        save(LS.SEASON, state.seasonMenu);
+        renderSettings();
+        renderMenu();
+      });
+      list.appendChild(div);
+    }
+  }
+
+  function addSeasonMenu(){
+    const name = el("seasonName").value.trim();
+    const priceStr = el("seasonPrice").value.trim();
+    const variant = el("seasonVariant").value;
+    const active = el("seasonActive").value === "true";
+
+    if (!name) return alert("메뉴명을 입력하세요.");
+    const price = Number(priceStr);
+    if (!Number.isFinite(price) || price <= 0) return alert("가격은 예: 4.5 형태로 입력하세요.");
+
+    state.seasonMenu.push({
+      id: "SEASON_" + (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
+      name,
+      price: Math.round(price * 10) / 10,
+      variant,
+      active
+    });
+    save(LS.SEASON, state.seasonMenu);
+
+    el("seasonName").value = "";
+    el("seasonPrice").value = "";
+    el("seasonVariant").value = "both";
+    el("seasonActive").value = "true";
+
+    renderSettings();
+    renderMenu();
+  }
+
+  function confirmSelection(){
+    if (state.selection.size === 0) return;
+    state.confirmed = true;
+    renderSelection();
+  }
+
+  function receiveOrder(){
+    if (!state.confirmed || state.selection.size === 0) return;
+
+    const buyerName = el("buyerName").value.trim();
+    if (!buyerName){
+      const ok = confirm("주문자/팀명이 비어 있습니다. 그대로 접수할까요?");
+      if (!ok) return;
+    }
+
+    const paymentMethod = el("payMethod").value;
+    const items = [...state.selection.values()].map(v => ({ name:v.name, qty:v.qty, unitWon:v.unitWon }));
+    const totalWon = selectionTotalWon();
+
+    const order = {
+      id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()),
+      orderNo: nextOrderNo(),
+      buyerName: buyerName || "",
+      paymentMethod,
+      createdAt: nowISO(),
+      status: "OPEN",
+      items,
+      totalWon
+    };
+
+    state.openOrders.push(order);
+    save(LS.OPEN, state.openOrders);
+
+    state.selection.clear();
+    state.confirmed = false;
+    el("buyerName").value = "";
+    setPayment("CASH");
+
+    renderMenu();
+    renderSelection();
+    updateHeaderStats();
+    setTab("open");
+  }
+
+  function clearSelection(){
+    state.selection.clear();
+    state.confirmed = false;
+    el("buyerName").disabled = false;
+    lockPaymentToggle(false);
+    renderMenu();
+    renderSelection();
+  }
+
+  function exportBackup(){
+    const data = {
+      exportedAt: nowISO(),
+      openOrders: state.openOrders,
+      historyOrders: state.historyOrders,
+      seasonMenu: state.seasonMenu,
+      dailyCounter: load(LS.COUNTER, {})
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type:"application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `yeolbangcafe_backup_${todayKey()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importBackup(file){
+    try{
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      state.openOrders = Array.isArray(data.openOrders) ? data.openOrders : [];
+      state.historyOrders = Array.isArray(data.historyOrders) ? data.historyOrders : [];
+      state.seasonMenu = Array.isArray(data.seasonMenu) ? data.seasonMenu : [];
+
+      save(LS.OPEN, state.openOrders);
+      save(LS.HIST, state.historyOrders);
+      save(LS.SEASON, state.seasonMenu);
+      if (data.dailyCounter) save(LS.COUNTER, data.dailyCounter);
+
+      updateHeaderStats();
+      renderMenu();
+      renderSelection();
+      renderOpen();
+      renderSettle();
+      renderSettings();
+      alert("백업을 불러왔습니다.");
+    }catch(e){
+      alert("백업 파일을 읽을 수 없습니다.");
+    }
+  }
+
+  function resetAll(){
+    if (!confirm("정말로 전체 데이터를 초기화할까요? (되돌릴 수 없습니다)")) return;
+
+    localStorage.removeItem(LS.OPEN);
+    localStorage.removeItem(LS.HIST);
+    localStorage.removeItem(LS.SEASON);
+    localStorage.removeItem(LS.COUNTER);
+
+    state.openOrders = [];
+    state.historyOrders = [];
+    state.seasonMenu = [];
+    state.selection.clear();
+    state.confirmed = false;
+
+    el("buyerName").value = "";
+    setPayment("CASH");
+
+    updateHeaderStats();
+    renderMenu();
+    renderSelection();
+    renderOpen();
+    renderSettle();
+    renderSettings();
+    alert("초기화 완료");
+  }
+
+  // ===== Events =====
+  document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => setTab(b.dataset.tab)));
+  el("btnConfirm").addEventListener("click", confirmSelection);
+  el("btnReceive").addEventListener("click", receiveOrder);
+  el("btnClearSelection").addEventListener("click", clearSelection);
+
+  el("btnSortOpen").addEventListener("click", () => {
+    state.openSortNewest = !state.openSortNewest;
+    el("btnSortOpen").textContent = `정렬: ${state.openSortNewest ? "최신순" : "오래된순"}`;
+    renderOpen();
+  });
+
+  el("settleDate").addEventListener("change", renderSettle);
+  el("settleMode").addEventListener("change", renderSettle);
+
+  el("btnAddSeason").addEventListener("click", addSeasonMenu);
+  el("btnExport").addEventListener("click", exportBackup);
+  el("importFile").addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) importBackup(file);
+    e.target.value = "";
+  });
+  el("btnResetAll").addEventListener("click", resetAll);
+
+  el("paySeg").addEventListener("click", (e) => {
+    if (!(e.target instanceof HTMLButtonElement)) return;
+    if (state.confirmed) return;
+    const v = e.target.dataset.pay;
+    if (!v) return;
+    setPayment(v);
+  });
+
+  window.addEventListener("resize", () => {
+    syncFixedHeights();
+  });
+
+  // ===== Init =====
+  function tickClock(){
+    const d = new Date();
+    el("clock").textContent = d.toLocaleString("ko-KR", {
+      weekday:"short", year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit"
+    });
+  }
+  tickClock();
+  setInterval(tickClock, 20000);
+
+  el("settleDate").value = todayKey();
+  setPayment("CASH");
+
+  updateHeaderStats();
+  renderMenu();
+  renderSelection();
+  renderOpen();
+  renderSettle();
+
+  // 처음 한 번은 실측 반영
+  syncFixedHeights();
+})();
+</script>
+</body>
+</html>
